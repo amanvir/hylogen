@@ -26,10 +26,47 @@ class HyloPrim v where
   vuoppre :: String -> v -> v
   vbop :: String -> v -> v -> v
   vboppre :: String -> v -> v -> v
-  fromVec1 :: Vec1 -> v
+  fromFloat :: Float -> v
 
 
+instance {-# INCOHERENT #-} (Num v, HyloPrim v) => Num v where
+  (+) = vbop "+"
+  (*) = vbop "*"
+  negate = vuoppre "-"
+  abs = vuop "abs"
+  signum = vuop "sign"
+  fromInteger =  fromFloat . fromInteger
 
+instance {-# INCOHERENT #-} (HyloPrim v) => Fractional v where
+  (/) = vbop "/"
+  recip = vbop "/" 1
+  fromRational = fromFloat . fromRational
+
+
+instance HyloPrim v => Floating v where
+  pi = vu "pi"
+  exp = vuop "exp"
+  log = vuop "log"
+  sqrt = vuop "sqrt"
+  (**) = vboppre "pow"
+  sin = vuop "sin"
+  cos = vuop "cos"
+  tan = vuop "tan"
+  asin = vuop "asin"
+  acos = vuop "acos"
+  atan = vuop "atan"
+  sinh x = (exp x - exp (negate x))/2
+  cosh x = (exp x + exp (negate x))/2
+  tanh x = sinh x / cosh x
+  asinh x = log $ x + sqrt(x**2 + 1)
+  acosh x = log $ x + sqrt(x**2 - 1)
+  atanh x = 0.5 * log ((1 + x)/(1 - x))
+
+instance HyloPrim v => AdditiveGroup v where
+  zeroV = 0
+  (^+^) = (+)
+  negateV = negate
+  (^-^) = (-)
 
 -- -- Why doesn't this work?
 -- instance (HyloPrim v, s ~ Scalar v) => VectorSpace v where
@@ -56,10 +93,6 @@ data Vec1 where
   W :: (HasW a) => a -> Vec1
 
 
-instance VectorSpace Vec1 where
-  type Scalar Vec1 = Float
-  a *^ b = Vec1 a * b
-
 instance Show Vec1 where
   show expr = case expr of
     Vec1 x -> show x
@@ -82,46 +115,11 @@ instance HyloPrim Vec1 where
   vuoppre = V1uoppre
   vbop = V1bop
   vboppre = V1boppre
-  fromVec1 = id
+  fromFloat = Vec1
 
-instance {-# OVERLAPPING #-} Num Vec1 where
-  (+) = vbop "+"
-  (*) = vbop "*"
-  negate = vuoppre "-"
-  abs = vuop "abs"
-  signum = vuop "sign"
-  fromInteger = Vec1 . fromInteger
-
-instance Fractional Vec1 where
-  (/) = vbop "/"
-  recip = vbop "/" 1
-  fromRational = fromVec1 . fromRational
-
-
-instance Floating Vec1 where
-  pi = vu "pi"
-  exp = vuop "exp"
-  log = vuop "log"
-  sqrt = vuop "sqrt"
-  (**) = vboppre "pow"
-  sin = vuop "sin"
-  cos = vuop "cos"
-  tan = vuop "tan"
-  asin = vuop "asin"
-  acos = vuop "acos"
-  atan = vuop "atan"
-  sinh x = (exp x - exp (negate x))/2
-  cosh x = (exp x + exp (negate x))/2
-  tanh x = sinh x / cosh x
-  asinh x = log $ x + sqrt(x**2 + 1)
-  acosh x = log $ x + sqrt(x**2 - 1)
-  atanh x = 0.5 * log ((1 + x)/(1 - x))
-
-instance AdditiveGroup Vec1 where
-  zeroV = 0
-  (^+^) = (+)
-  negateV = negate
-  (^-^) = (-)
+instance VectorSpace Vec1 where
+  type Scalar Vec1 = Vec1
+  a *^ b = a * b
 
 -- | Vec2:
 
@@ -141,7 +139,7 @@ instance HyloPrim Vec2 where
   vuoppre = V2uoppre
   vbop = V2bop
   vboppre = V2boppre
-  fromVec1 x = Vec2 (x, x)
+  fromFloat x = vec (vec x, vec x)
 
 
 instance Show Vec2 where
@@ -153,48 +151,9 @@ instance Show Vec2 where
     V2bop b x y -> "(" <> show x <> " " <> b <> " " <> show y <> ")"
     V2boppre b x y -> b <> "(" <> show x <> ", " <> show y <> ")"
 
-instance Num Vec2 where
-  (+) = vbop "+"
-  (*) = vbop "*"
-  negate = vuoppre "-"
-  abs = vuop "abs"
-  signum = vuop "sign"
-  fromInteger = fromVec1 . fromInteger
-
-instance Fractional Vec2 where
-  (/) = vbop "/"
-  recip = vbop "/" 1
-  fromRational = fromVec1 . fromRational
-
-
-instance Floating Vec2 where
-  pi = vu "pi"
-  exp = vuop "exp"
-  log = vuop "log"
-  sqrt = vuop "sqrt"
-  (**) = vboppre "pow"
-  sin = vuop "sin"
-  cos = vuop "cos"
-  tan = vuop "tan"
-  asin = vuop "asin"
-  acos = vuop "acos"
-  atan = vuop "atan"
-  sinh x = (exp x - exp (negate x))/2
-  cosh x = (exp x + exp (negate x))/2
-  tanh x = sinh x / cosh x
-  asinh x = log $ x + sqrt(x**2 + 1)
-  acosh x = log $ x + sqrt(x**2 - 1)
-  atanh x = 0.5 * log ((1 + x)/(1 - x))
-
-instance AdditiveGroup Vec2 where
-  zeroV = 0
-  (^+^) = (+)
-  negateV = negate
-  (^-^) = (-)
-
 instance VectorSpace Vec2 where
   type Scalar Vec2 = Vec1
-  a *^ b = fromVec1 a * b
+  a *^ b = vec (a, a) * b
 
 
 instance HasX Vec2
@@ -219,7 +178,7 @@ instance HyloPrim Vec3 where
   vuoppre = V3uoppre
   vbop = V3bop
   vboppre = V3boppre
-  fromVec1 x = Vec3 (x, x, x)
+  fromFloat x = vec (vec x, vec x, vec x)
 
 instance Show Vec3 where
   show expr = case expr of
@@ -230,48 +189,9 @@ instance Show Vec3 where
     V3bop b x y -> "(" <> show x <> " " <> b <> " " <> show y <> ")"
     V3boppre b x y -> b <> "(" <> show x <> ", " <> show y <> ")"
 
-instance Num Vec3 where
-  (+) = vbop "+"
-  (*) = vbop "*"
-  negate = vuoppre "-"
-  abs = vuop "abs"
-  signum = vuop "sign"
-  fromInteger = fromVec1 . fromInteger
-
-instance Fractional Vec3 where
-  (/) = vbop "/"
-  recip = vbop "/" 1
-  fromRational = fromVec1 . fromRational
-
-
-instance Floating Vec3 where
-  pi = vu "pi"
-  exp = vuop "exp"
-  log = vuop "log"
-  sqrt = vuop "sqrt"
-  (**) = vboppre "pow"
-  sin = vuop "sin"
-  cos = vuop "cos"
-  tan = vuop "tan"
-  asin = vuop "asin"
-  acos = vuop "acos"
-  atan = vuop "atan"
-  sinh x = (exp x - exp (negate x))/2
-  cosh x = (exp x + exp (negate x))/2
-  tanh x = sinh x / cosh x
-  asinh x = log $ x + sqrt(x**2 + 1)
-  acosh x = log $ x + sqrt(x**2 - 1)
-  atanh x = 0.5 * log ((1 + x)/(1 - x))
-
-instance AdditiveGroup Vec3 where
-  zeroV = 0
-  (^+^) = (+)
-  negateV = negate
-  (^-^) = (-)
-
 instance VectorSpace Vec3 where
   type Scalar Vec3 = Vec1
-  a *^ b = fromVec1 a * b
+  a *^ b = vec (a, a, a) * b
 
 instance HasX Vec3
 instance HasY Vec3
@@ -298,7 +218,7 @@ instance HyloPrim Vec4 where
   vuoppre = V4uoppre
   vbop = V4bop
   vboppre = V4boppre
-  fromVec1 x = Vec4 (x, x, x, x)
+  fromFloat x = vec (vec x,vec x,vec x,vec x)
 
 instance Show Vec4 where
   show expr = case expr of
@@ -309,48 +229,10 @@ instance Show Vec4 where
     V4bop b x y -> "(" <> show x <> " " <> b <> " " <> show y <> ")"
     V4boppre b x y -> b <> "(" <> show x <> ", " <> show y <> ")"
 
-instance Num Vec4 where
-  (+) = vbop "+"
-  (*) = vbop "*"
-  negate = vuoppre "-"
-  abs = vuop "abs"
-  signum = vuop "sign"
-  fromInteger = fromVec1 . fromInteger
-
-instance Fractional Vec4 where
-  (/) = vbop "/"
-  recip = vbop "/" 1
-  fromRational = fromVec1 . fromRational
-
-
-instance Floating Vec4 where
-  pi = vu "pi"
-  exp = vuop "exp"
-  log = vuop "log"
-  sqrt = vuop "sqrt"
-  (**) = vboppre "pow"
-  sin = vuop "sin"
-  cos = vuop "cos"
-  tan = vuop "tan"
-  asin = vuop "asin"
-  acos = vuop "acos"
-  atan = vuop "atan"
-  sinh x = (exp x - exp (negate x))/2
-  cosh x = (exp x + exp (negate x))/2
-  tanh x = sinh x / cosh x
-  asinh x = log $ x + sqrt(x**2 + 1)
-  acosh x = log $ x + sqrt(x**2 - 1)
-  atanh x = 0.5 * log ((1 + x)/(1 - x))
-
-instance AdditiveGroup Vec4 where
-  zeroV = 0
-  (^+^) = (+)
-  negateV = negate
-  (^-^) = (-)
 
 instance VectorSpace Vec4 where
   type Scalar Vec4 = Vec1
-  a *^ b = fromVec1 a * b
+  a *^ b = vec (a, a, a, a) * b
 
 instance HasX Vec4
 instance HasY Vec4
